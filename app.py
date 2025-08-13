@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from tensorflow.keras.metrics import MeanSquaredError
 
 # Set the title and a brief description of the app
 st.title('Cholera Case Prediction App')
@@ -13,7 +14,12 @@ st.markdown('This app uses your LSTM model to predict future cholera cases based
 def load_my_model():
     """Load the pre-trained Keras model from the h5 file."""
     try:
-        model = load_model('lstm_model.h5')
+        # Define the custom objects needed for loading the model.
+        # In this case, 'mse' needs to be mapped to the Keras MeanSquaredError class.
+        custom_objects = {'mse': MeanSquaredError()}
+        
+        # Load the model with the custom objects
+        model = load_model('lstm_model.h5', custom_objects=custom_objects)
         return model
     except Exception as e:
         st.error(f"Error loading the model: {e}")
