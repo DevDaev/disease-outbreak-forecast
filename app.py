@@ -708,7 +708,23 @@ def create_quick_plot(data):
             paper_bgcolor='rgba(0,0,0,0)',
         )
         return fig
-    return px.scatter(title="No suitable columns for visualization")
+    
+    fig = go.Figure()
+    fig.add_annotation(
+        text="No suitable columns for visualization",
+        xref="paper", yref="paper",
+        x=0.5, y=0.5, xanchor='center', yanchor='middle',
+        showarrow=False,
+        font=dict(size=16, color="gray")
+    )
+    fig.update_layout(
+        title="Data Overview",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False, showticklabels=False),
+        yaxis=dict(showgrid=False, showticklabels=False)
+    )
+    return fig
 
 # Create time series plot
 def create_time_series_plot(data):
@@ -724,7 +740,23 @@ def create_time_series_plot(data):
             paper_bgcolor='rgba(0,0,0,0)',
         )
         return fig
-    return px.line(title="No cases data available")
+    
+    fig = go.Figure()
+    fig.add_annotation(
+        text="No cases data available",
+        xref="paper", yref="paper",
+        x=0.5, y=0.5, xanchor='center', yanchor='middle',
+        showarrow=False,
+        font=dict(size=16, color="gray")
+    )
+    fig.update_layout(
+        title="Cholera Cases Over Time",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False, showticklabels=False),
+        yaxis=dict(showgrid=False, showticklabels=False)
+    )
+    return fig
 
 # Create distribution plot
 def create_distribution_plot(data):
@@ -739,7 +771,23 @@ def create_distribution_plot(data):
             paper_bgcolor='rgba(0,0,0,0)',
         )
         return fig
-    return px.histogram(title="No cases data available")
+    
+    fig = go.Figure()
+    fig.add_annotation(
+        text="No cases data available",
+        xref="paper", yref="paper",
+        x=0.5, y=0.5, xanchor='center', yanchor='middle',
+        showarrow=False,
+        font=dict(size=16, color="gray")
+    )
+    fig.update_layout(
+        title="Cases Distribution",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False, showticklabels=False),
+        yaxis=dict(showgrid=False, showticklabels=False)
+    )
+    return fig
 
 # Run forecast using selected model
 def run_forecast(data, model_name, forecast_days, confidence_interval):
@@ -910,3 +958,5 @@ def create_forecast_plot(results):
 
 if __name__ == "__main__":
     main()
+
+</merged_code>
