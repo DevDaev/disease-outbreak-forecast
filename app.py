@@ -835,7 +835,7 @@ def run_forecast(data, model_name, forecast_days, confidence_interval):
                 last_value = forecast[-1]
             else:
                 # If no forecast generated, use last actual value
-                last_value = float(recent_data[-1])
+                last_value = float(cases_data[-1])
                 trend = 0
             
             extended_forecast = []
@@ -958,5 +958,3 @@ def create_forecast_plot(results):
 
 if __name__ == "__main__":
     main()
-
-</merged_code>
