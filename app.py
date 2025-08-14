@@ -313,7 +313,7 @@ def admin_model_management():
                     
                     # Add to models dictionary
                     model_type = "lstm" if file_extension == "h5" else "sklearn"
-                    MODELS[model_name] = ModelWrapper(
+                    new_model = ModelWrapper(
                         model_name,
                         model_description,
                         model_accuracy,
@@ -321,10 +321,11 @@ def admin_model_management():
                         model_type=model_type
                     )
                     
-                    # Update session state
-                    st.session_state.uploaded_models = MODELS
+                    MODELS[model_name] = new_model
+                    st.session_state.uploaded_models = MODELS.copy()
                     
                     st.success(f"✅ Model '{model_name}' uploaded successfully!")
+                    st.rerun()  # Refresh to show the new model
                     
                 except Exception as e:
                     st.error(f"❌ Error uploading model: {str(e)}")
@@ -344,43 +345,148 @@ def admin_model_management():
     
     st.markdown("---")
     
-    # Existing models management
-    st.markdown("### 📊 Existing Models")
+    st.markdown("### 📊 Model Management")
     
-    for model_name, model in MODELS.items():
-        with st.expander(f"🤖 {model_name}"):
-            col1, col2, col3 = st.columns([2, 1, 1])
-            
+    # Get current models
+    current_models = st.session_state.uploaded_models if 'uploaded_models' in st.session_state else MODELS
+    
+    # Separate mock models from uploaded models
+    mock_models = {k: v for k, v in current_models.items() if v.model_type == "mock"}
+    uploaded_models = {k: v for k, v in current_models.items() if v.model_type != "mock"}
+    
+    # Mock models section (read-only)
+    if mock_models:
+        st.markdown("#### 🎭 Built-in Demo Models")
+        st.info("These are demonstration models and cannot be deleted.")
+        
+        for model_name, model in mock_models.items():
+            with st.expander(f"🤖 {model_name} (Demo)", expanded=False):
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.write(f"**Description:** {model.description}")
+                    st.write(f"**Type:** {model.model_type}")
+                    st.write(f"**Accuracy:** {model.accuracy:.1%}")
+                
+                with col2:
+                    st.info("Demo Model")
+    
+    # Uploaded models section (manageable)
+    st.markdown("#### 📁 Uploaded Models")
+    
+    if not uploaded_models:
+        st.info("No uploaded models found. Upload a model above to get started.")
+    else:
+        col1, col2, col3 = st.columns([2, 1, 1])
+        with col1:
+            st.write(f"**Total Uploaded Models:** {len(uploaded_models)}")
+        with col2:
+            if st.button("🔄 Refresh Models", help="Reload models from disk"):
+                st.session_state.uploaded_models = load_uploaded_models()
+                st.success("Models refreshed!")
+                st.rerun()
+        with col3:
+            if uploaded_models and st.button("🗑️ Delete All", help="Delete all uploaded models"):
+                st.session_state.show_delete_all_confirm = True
+        
+        if st.session_state.get('show_delete_all_confirm', False):
+            st.warning("⚠️ Are you sure you want to delete ALL uploaded models? This action cannot be undone.")
+            col1, col2 = st.columns(2)
             with col1:
-                st.write(f"**Description:** {model.description}")
-                st.write(f"**Type:** {model.model_type}")
-                st.write(f"**Accuracy:** {model.accuracy:.1%}")
-                if model.model_file:
-                    st.write(f"**File:** {os.path.basename(model.model_file)}")
+                if st.button("✅ Yes, Delete All", type="primary"):
+                    deleted_count = 0
+                    for model_name, model in uploaded_models.items():
+                        try:
+                            if model.model_file and os.path.exists(model.model_file):
+                                os.remove(model.model_file)
+                                deleted_count += 1
+                        except Exception as e:
+                            st.error(f"Error deleting {model_name}: {str(e)}")
+                    
+                    # Remove from MODELS dict
+                    for model_name in list(uploaded_models.keys()):
+                        if model_name in MODELS:
+                            del MODELS[model_name]
+                    
+                    st.session_state.uploaded_models = MODELS.copy()
+                    st.session_state.show_delete_all_confirm = False
+                    st.success(f"✅ Deleted {deleted_count} models successfully!")
+                    st.rerun()
             
             with col2:
-                if model.model_type != "mock":
-                    if st.button(f"🧪 Test Model", key=f"test_{model_name}"):
+                if st.button("❌ Cancel"):
+                    st.session_state.show_delete_all_confirm = False
+                    st.rerun()
+        
+        # Individual model management
+        for model_name, model in uploaded_models.items():
+            with st.expander(f"🤖 {model_name}", expanded=False):
+                col1, col2, col3 = st.columns([2, 1, 1])
+                
+                with col1:
+                    st.write(f"**Description:** {model.description}")
+                    st.write(f"**Type:** {model.model_type.upper()}")
+                    st.write(f"**Accuracy:** {model.accuracy:.1%}")
+                    if model.model_file:
+                        st.write(f"**File:** {os.path.basename(model.model_file)}")
                         try:
-                            # Test model loading
-                            test_data = np.random.randn(30)
-                            predictions = model.predict(test_data)
-                            st.success("✅ Model loads successfully")
-                            st.write(f"Sample prediction shape: {predictions.shape}")
-                        except Exception as e:
-                            st.error(f"❌ Model test failed: {str(e)}")
-            
-            with col3:
-                if model.model_type != "mock" and st.button(f"🗑️ Delete", key=f"delete_{model_name}"):
-                    try:
-                        if model.model_file and os.path.exists(model.model_file):
-                            os.remove(model.model_file)
-                        del MODELS[model_name]
-                        st.session_state.uploaded_models = MODELS
-                        st.success(f"✅ Deleted {model_name}")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error deleting model: {str(e)}")
+                            file_stats = os.stat(model.model_file)
+                            file_size = file_stats.st_size / (1024 * 1024)  # MB
+                            mod_time = datetime.fromtimestamp(file_stats.st_mtime)
+                            st.write(f"**Size:** {file_size:.2f} MB")
+                            st.write(f"**Modified:** {mod_time.strftime('%Y-%m-%d %H:%M')}")
+                        except:
+                            pass
+                
+                with col2:
+                    if st.button(f"🧪 Test", key=f"test_{model_name}"):
+                        with st.spinner("Testing model..."):
+                            try:
+                                # Test model loading
+                                test_data = np.random.randn(30)
+                                predictions = model.predict(test_data)
+                                st.success("✅ Model loads and predicts successfully")
+                                st.write(f"**Input shape:** {test_data.shape}")
+                                st.write(f"**Output shape:** {predictions.shape}")
+                                st.write(f"**Sample prediction:** {predictions[0]:.2f}")
+                            except Exception as e:
+                                st.error(f"❌ Model test failed: {str(e)}")
+                
+                with col3:
+                    delete_key = f"delete_{model_name}"
+                    confirm_key = f"confirm_delete_{model_name}"
+                    
+                    if st.session_state.get(confirm_key, False):
+                        st.warning("Confirm delete?")
+                        col_yes, col_no = st.columns(2)
+                        with col_yes:
+                            if st.button("✅", key=f"yes_{model_name}"):
+                                try:
+                                    # Delete file
+                                    if model.model_file and os.path.exists(model.model_file):
+                                        os.remove(model.model_file)
+                                    
+                                    # Remove from MODELS dict
+                                    if model_name in MODELS:
+                                        del MODELS[model_name]
+                                    
+                                    # Update session state
+                                    st.session_state.uploaded_models = MODELS.copy()
+                                    st.session_state[confirm_key] = False
+                                    
+                                    st.success(f"✅ Deleted {model_name}")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Error deleting model: {str(e)}")
+                        
+                        with col_no:
+                            if st.button("❌", key=f"no_{model_name}"):
+                                st.session_state[confirm_key] = False
+                                st.rerun()
+                    else:
+                        if st.button("🗑️ Delete", key=delete_key):
+                            st.session_state[confirm_key] = True
+                            st.rerun()
 
 # Main function to handle page navigation
 def main():
