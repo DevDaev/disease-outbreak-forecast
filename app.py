@@ -89,7 +89,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Admin credentials and session state for admin
+# Admin credentials and constants
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "cholera_admin_2024"  # In production, use proper authentication
 MODELS_DIR = "uploaded_models"
@@ -97,16 +97,6 @@ MODELS_DIR = "uploaded_models"
 # Create models directory if it doesn't exist
 if not os.path.exists(MODELS_DIR):
     os.makedirs(MODELS_DIR)
-
-# Initialize session state
-if 'data' not in st.session_state:
-    st.session_state.data = None
-if 'forecast_results' not in st.session_state:
-    st.session_state.forecast_results = None
-if 'is_admin' not in st.session_state:
-    st.session_state.is_admin = False
-if 'uploaded_models' not in st.session_state:
-    st.session_state.uploaded_models = load_uploaded_models()
 
 class ModelWrapper:
     def __init__(self, name, description, accuracy, model_file=None, model_type="mock"):
@@ -222,8 +212,19 @@ def load_uploaded_models():
     
     return models
 
+# Initialize session state
+if 'data' not in st.session_state:
+    st.session_state.data = None
+if 'forecast_results' not in st.session_state:
+    st.session_state.forecast_results = None
+if 'is_admin' not in st.session_state:
+    st.session_state.is_admin = False
+if 'uploaded_models' not in st.session_state:
+    st.session_state.uploaded_models = load_uploaded_models()
+
 MODELS = load_uploaded_models()
 
+# Admin login interface
 def admin_login():
     """Admin login interface"""
     st.markdown("### 🔐 Admin Login")
@@ -241,6 +242,7 @@ def admin_login():
             else:
                 st.error("❌ Invalid credentials")
 
+# Admin interface for managing models
 def admin_model_management():
     """Admin interface for managing models"""
     st.markdown('<h2 class="sub-header">🔧 Model Management (Admin)</h2>', unsafe_allow_html=True)
@@ -351,6 +353,7 @@ def admin_model_management():
                     except Exception as e:
                         st.error(f"❌ Error deleting model: {str(e)}")
 
+# Main function to handle page navigation
 def main():
     # Header
     st.markdown('<h1 class="main-header">🦠 Cholera Forecast Platform</h1>', unsafe_allow_html=True)
@@ -405,6 +408,7 @@ def main():
         else:
             st.error("❌ Access denied. Please login as admin.")
 
+# Data upload page
 def data_upload_page():
     st.markdown('<h2 class="sub-header">📁 Data Upload</h2>', unsafe_allow_html=True)
     
@@ -469,6 +473,7 @@ def data_upload_page():
                 fig = create_quick_plot(data)
                 st.plotly_chart(fig, use_container_width=True)
 
+# Model selection page
 def model_selection_page():
     st.markdown('<h2 class="sub-header">🤖 Model Selection</h2>', unsafe_allow_html=True)
     
@@ -534,6 +539,7 @@ def model_selection_page():
                 st.session_state.forecast_results = results
                 st.success("✅ Forecast completed! Check the Forecast Results section.")
 
+# Forecast results page
 def forecast_results_page():
     st.markdown('<h2 class="sub-header">📈 Forecast Results</h2>', unsafe_allow_html=True)
     
@@ -580,6 +586,7 @@ def forecast_results_page():
         mime="text/csv"
     )
 
+# Analytics dashboard page
 def analytics_dashboard_page():
     st.markdown('<h2 class="sub-header">📊 Analytics Dashboard</h2>', unsafe_allow_html=True)
     
@@ -629,6 +636,7 @@ def analytics_dashboard_page():
             fig3 = px.imshow(corr_matrix, text_auto=True, aspect="auto")
             st.plotly_chart(fig3, use_container_width=True)
 
+# Validate uploaded data
 def validate_data(data):
     """Validate uploaded data"""
     results = []
@@ -658,6 +666,7 @@ def validate_data(data):
     
     return results
 
+# Create a quick visualization of the data
 def create_quick_plot(data):
     """Create a quick visualization of the data"""
     if len(data.columns) >= 2:
@@ -672,6 +681,7 @@ def create_quick_plot(data):
         return fig
     return px.scatter(title="No suitable columns for visualization")
 
+# Create time series plot
 def create_time_series_plot(data):
     """Create time series plot"""
     if 'cases' in data.columns.str.lower():
@@ -687,6 +697,7 @@ def create_time_series_plot(data):
         return fig
     return px.line(title="No cases data available")
 
+# Create distribution plot
 def create_distribution_plot(data):
     """Create distribution plot"""
     if 'cases' in data.columns.str.lower():
@@ -701,6 +712,7 @@ def create_distribution_plot(data):
         return fig
     return px.histogram(title="No cases data available")
 
+# Run forecast using selected model
 def run_forecast(data, model_name, forecast_days, confidence_interval):
     """Run forecast using selected model"""
     current_models = st.session_state.uploaded_models if 'uploaded_models' in st.session_state else MODELS
@@ -775,6 +787,7 @@ def run_forecast(data, model_name, forecast_days, confidence_interval):
     
     return results
 
+# Create forecast visualization
 def create_forecast_plot(results):
     """Create forecast visualization"""
     forecast_df = pd.DataFrame(results['forecast_data'])
